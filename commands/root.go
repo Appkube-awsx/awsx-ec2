@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/Appkube-awsx/awsx-ec2/authenticater"
@@ -12,9 +13,9 @@ import (
 
 // AwsxCloudElementsCmd represents the base command when called without any subcommands
 var AwsxEc2Cmd = &cobra.Command{
-	Use:   "GetEC2Metadata",
-	Short: "GetEC2Metadata command gets resource Arn",
-	Long:  `GetEC2Metadata command gets resource Arn details of an AWS account`,
+	Use:   "GetEC2List",
+	Short: "GetEC2List command gets resource Arn",
+	Long:  `GetEC2List command gets resource Arn details of an AWS account`,
 
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("Command getEc2Data started")
@@ -38,12 +39,19 @@ var AwsxEc2Cmd = &cobra.Command{
 func DescribeInstances(region string, accessKey string, secretKey string, env string, crossAccountRoleArn string, externalId string) *ec2.DescribeInstancesOutput {
 	log.Println("Getting aws config resource summary")
 	ec2Client := client.GetClient(region, crossAccountRoleArn, accessKey, secretKey, externalId)
+
 	ec2Request := &ec2.DescribeInstancesInput{}
 	ec2Response, err := ec2Client.DescribeInstances(ec2Request)
 	if err != nil {
 		log.Fatalln("Error: ", err)
 	}
-	log.Println(ec2Response)
+	//log.Println(ec2Response)
+	for _, reservation := range ec2Response.Reservations {
+		for _, instance := range reservation.Instances {
+			fmt.Println("ID: ", *instance.InstanceId, " name: ", *instance.Tags[0].Value)
+		}
+	}
+
 	return ec2Response
 }
 
@@ -56,8 +64,7 @@ func Execute() {
 }
 
 func init() {
-	//AwsxEc2Cmd.AddCommand(ec2cmd.GetConfigDataCmd)
-	//AwsxEc2Cmd.AddCommand(ec2cmd.GetCostSpikeCmd)
+	AwsxEc2Cmd.AddCommand(ec2cmd.GetEC2ConfigCmd)
 	AwsxEc2Cmd.AddCommand(ec2cmd.GetCostDataCmd)
 	AwsxEc2Cmd.AddCommand(ec2cmd.GetCostSpikeCmd)
 	AwsxEc2Cmd.PersistentFlags().String("vaultUrl", "", "vault end point")
@@ -71,5 +78,6 @@ func init() {
 
 }
 
-// cmd used to get metadata of EC2 :
-//go run main.go --zone=us-east-1 --accessKey=<C6> --secretKey=<> --crossAccountRoleArn=<>  --externalId=<>
+// cmd used to get list of EC2 instance's :
+
+//  ./awsx-ec2 --zone=us-east-1 --accessKey=<6f> --secretKey=<> --crossAccountRoleArn=<>  --externalId=<>

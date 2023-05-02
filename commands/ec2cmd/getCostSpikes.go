@@ -43,15 +43,21 @@ var GetCostSpikeCmd = &cobra.Command{
 
 		if authFlag {
 
-			wrapperCostSpike(region, crossAccountRoleArn, acKey, secKey, env, externalId, granularity, startDate, endDate)
+			// wrapperCostSpike(region, crossAccountRoleArn, acKey, secKey, env, externalId, granularity, startDate, endDate, "Amazon Simple Storage Service")
+			// wrapperCostSpike(region, crossAccountRoleArn, acKey, secKey, env, externalId, granularity, startDate, endDate, "Amazon CloudFront")
+			// wrapperCostSpike(region, crossAccountRoleArn, acKey, secKey, env, externalId, granularity, startDate, endDate, "Amazon DynamoDB")
+			// wrapperCostSpike(region, crossAccountRoleArn, acKey, secKey, env, externalId, granularity, startDate, endDate, "Amazon Lambda")
+			// wrapperCostSpike(region, crossAccountRoleArn, acKey, secKey, env, externalId, granularity, startDate, endDate, "Amazon API Gateway")
+			wrapperCostSpike(region, crossAccountRoleArn, acKey, secKey, env, externalId, granularity, startDate, endDate, "Amazon Elastic Compute Cloud - Compute")
+
 		}
 	},
 }
 
 // Wrapper function to get cost, spike percentage and print them.
-func wrapperCostSpike(region string, crossAccountRoleArn string, acKey string, secKey string, env string, externalId string, granularity string, startDate string, endDate string) (string, error) {
+func wrapperCostSpike(region string, crossAccountRoleArn string, acKey string, secKey string, env string, externalId string, granularity string, startDate string, endDate string, service string) (string, error) {
 	costClient := client.GetCostClient(region, crossAccountRoleArn, acKey, secKey, externalId)
-
+	fmt.Println("cost spike for :-" + service)
 	switch granularity {
 	case "DAILY":
 		// Call CostSpikes function for the date period
@@ -70,7 +76,7 @@ func wrapperCostSpike(region string, crossAccountRoleArn string, acKey string, s
 		for d := startDate; d.Before(endDate.AddDate(0, 0, 1)); d = d.AddDate(0, 0, 1) {
 			prevDate := d.AddDate(0, 0, -1)
 			// fmt.Printf("%s (%s)\n", d.Format("2006-01-02"), prevDate.Format("2006-01-02"))
-			CostSpikes(region, crossAccountRoleArn, acKey, secKey, externalId, granularity, prevDate.Format("2006-01-02"), d.Format("2006-01-02"), costClient)
+			CostSpikes(region, crossAccountRoleArn, acKey, secKey, externalId, granularity, prevDate.Format("2006-01-02"), d.Format("2006-01-02"), costClient, service)
 		}
 		return "", nil
 
@@ -94,7 +100,7 @@ func wrapperCostSpike(region string, crossAccountRoleArn string, acKey string, s
 			}
 			prevDate := d.AddDate(0, -1, 0)
 			// fmt.Printf("%s (%s)\n", d.Format("2006-01-02"), prevDate.Format("2006-01-02"))
-			CostSpikes(region, crossAccountRoleArn, acKey, secKey, externalId, granularity, prevDate.Format("2006-01-02"), d.Format("2006-01-02"), costClient)
+			CostSpikes(region, crossAccountRoleArn, acKey, secKey, externalId, granularity, prevDate.Format("2006-01-02"), d.Format("2006-01-02"), costClient, service)
 		}
 		return "", nil
 
@@ -115,7 +121,7 @@ func wrapperCostSpike(region string, crossAccountRoleArn string, acKey string, s
 		for d := startDateTime; d.Before(endDateTime); d = d.Add(time.Hour) {
 			prevHour := d.Add(-time.Hour)
 			// fmt.Println(prevHour.Format(layout), d.Format(layout))
-			CostSpikes(region, crossAccountRoleArn, acKey, secKey, externalId, granularity, prevHour.Format("2006-01-02T15:04:05Z"), d.Format("2006-01-02T15:04:05Z"), costClient)
+			CostSpikes(region, crossAccountRoleArn, acKey, secKey, externalId, granularity, prevHour.Format("2006-01-02T15:04:05Z"), d.Format("2006-01-02T15:04:05Z"), costClient, service)
 		}
 
 		return "", nil
@@ -127,9 +133,9 @@ func wrapperCostSpike(region string, crossAccountRoleArn string, acKey string, s
 }
 
 // Function to do the cost comparison.
-func CostSpikes(region string, crossAccountRoleArn string, accessKey string, secretKey string, externalId string, granularity string, startDateTime string, endDateTime string, costClient *costexplorer.CostExplorer) (string, error) {
+func CostSpikes(region string, crossAccountRoleArn string, accessKey string, secretKey string, externalId string, granularity string, startDateTime string, endDateTime string, costClient *costexplorer.CostExplorer, service string) (string, error) {
 	// Get cost data for latest time period
-	startCostData, err := ServiceCostDetails(region, crossAccountRoleArn, accessKey, secretKey, externalId, granularity, startDateTime, endDateTime, costClient)
+	startCostData, err := ServiceCostDetails(region, crossAccountRoleArn, accessKey, secretKey, externalId, granularity, startDateTime, endDateTime, costClient, service)
 	if err != nil {
 		log.Fatalln("Error: in getting cost data for start date", err)
 		return "", err
@@ -146,7 +152,7 @@ func CostSpikes(region string, crossAccountRoleArn string, accessKey string, sec
 			log.Fatalln("Error: in getting previous time period date", err)
 			return "", err
 		}
-		endCostData, err := ServiceCostDetails(region, crossAccountRoleArn, accessKey, secretKey, externalId, granularity, previousStartDateTime, previousEndDateTime, costClient)
+		endCostData, err := ServiceCostDetails(region, crossAccountRoleArn, accessKey, secretKey, externalId, granularity, previousStartDateTime, previousEndDateTime, costClient, service)
 		if err != nil {
 			log.Fatalln("Error: in getting cost data for end date", err)
 			return "", err
@@ -154,7 +160,7 @@ func CostSpikes(region string, crossAccountRoleArn string, accessKey string, sec
 		endCost = convertCostDataToFloat(endCostData)
 
 	default:
-		endCostData, err := ServiceCostDetails(region, crossAccountRoleArn, accessKey, secretKey, externalId, granularity, endDateTime, endDateTime, costClient)
+		endCostData, err := ServiceCostDetails(region, crossAccountRoleArn, accessKey, secretKey, externalId, granularity, endDateTime, endDateTime, costClient, service)
 		if err != nil {
 			log.Fatalln("Error: in getting cost data for end date", err)
 			return "", err
@@ -188,7 +194,7 @@ func CostSpikes(region string, crossAccountRoleArn string, accessKey string, sec
 }
 
 // Function to get cost for a given service for given time period.
-func ServiceCostDetails(region string, crossAccountRoleArn string, accessKey string, secretKey string, externalId string, granularity string, startDateTime string, endingDateTime string, costClient *costexplorer.CostExplorer) (string, error) {
+func ServiceCostDetails(region string, crossAccountRoleArn string, accessKey string, secretKey string, externalId string, granularity string, startDateTime string, endingDateTime string, costClient *costexplorer.CostExplorer, service string) (string, error) {
 	// costClient := client.GetCostClient(region, crossAccountRoleArn, accessKey, secretKey, externalId)
 
 	// Get endDateTime from startDateTime for DAILY/WEEKLY/HOURLY
@@ -240,7 +246,8 @@ func ServiceCostDetails(region string, crossAccountRoleArn string, accessKey str
 			Dimensions: &costexplorer.DimensionValues{
 				Key: aws.String("SERVICE"),
 				Values: []*string{
-					aws.String("Amazon Elastic Compute Cloud - Compute"),
+					// aws.String("Amazon Elastic Compute Cloud - Compute"),
+					aws.String(service),
 				},
 			},
 		},
@@ -383,6 +390,6 @@ func init() {
 
 }
 
-// cmd used to get Cost Spike of AWS EC2 :
+// The command used to get Cost Data Spike of AWS EC2 instances is given below :
 
-// go run main.go --zone=us-east-1 --accessKey=<h> --secretKey=<> --crossAccountRoleArn=<>  --externalId=<>  --env=<> GetCostSpike --granularity=DAILY --startDate=2023-03-01 --endDate=2023-04-01
+//  ./awsx-ec2 --zone=us-east-1 --accessKey=<> --secretKey=<> --crossAccountRoleArn=<>  --externalId=<>  --env=dev GetCostSpike --granularity=DAILY --startDate=2023-03-01 --endDate=2023-03-10

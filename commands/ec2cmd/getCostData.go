@@ -100,6 +100,6 @@ func init() {
 
 }
 
-// cmd used to get cost data of EC2 : {check accesskeys and use all other flags}
+// cmd used to get cost data of EC2 :
 
-//  go run main.go --zone=us-east-1 --accessKey=#########BVHH --secretKey= --crossAccountRoleArn=  --externalId=  getCostData
+//  ./awsx-ec2 --zone=<> --accessKey=<#HH> --secretKey=<> --crossAccountRoleArn=<>  --externalId=<>  --env=<dev>  getCostData
