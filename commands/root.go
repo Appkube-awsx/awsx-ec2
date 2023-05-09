@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Appkube-awsx/awsx-ec2/authenticater"
 	"github.com/Appkube-awsx/awsx-ec2/client"
 	"github.com/Appkube-awsx/awsx-ec2/commands/ec2cmd"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -22,13 +21,14 @@ var AwsxEc2Cmd = &cobra.Command{
 		vaultUrl := cmd.PersistentFlags().Lookup("vaultUrl").Value.String()
 		accountNo := cmd.PersistentFlags().Lookup("accountId").Value.String()
 		region := cmd.PersistentFlags().Lookup("zone").Value.String()
-		acKey := cmd.PersistentFlags().Lookup("accessKey").Value.String()
+		accessKey := cmd.PersistentFlags().Lookup("accessKey").Value.String()
 		secKey := cmd.PersistentFlags().Lookup("secretKey").Value.String()
 		env := cmd.PersistentFlags().Lookup("env").Value.String()
 		crossAccountRoleArn := cmd.PersistentFlags().Lookup("crossAccountRoleArn").Value.String()
 		externalId := cmd.PersistentFlags().Lookup("externalId").Value.String()
+		authFlag := input.verifyInputData(vaultUrl, accountNo, region, accessKey, secKey, crossAccountRoleArn, externalId)
 
-		authFlag := authenticater.AuthenticateData(vaultUrl, accountNo, region, acKey, secKey, crossAccountRoleArn, externalId)
+		//(vaultUrl, accountNo, region, acKey, secKey, crossAccountRoleArn, externalId)
 
 		if authFlag {
 			DescribeInstances(region, acKey, secKey, env, crossAccountRoleArn, externalId)
@@ -65,8 +65,8 @@ func Execute() {
 
 func init() {
 	AwsxEc2Cmd.AddCommand(ec2cmd.GetEC2ConfigCmd)
-	AwsxEc2Cmd.AddCommand(ec2cmd.GetCostDataCmd)
 	AwsxEc2Cmd.AddCommand(ec2cmd.GetCostSpikeCmd)
+	AwsxEc2Cmd.AddCommand(ec2cmd.GetCostDataCmd)
 	AwsxEc2Cmd.PersistentFlags().String("vaultUrl", "", "vault end point")
 	AwsxEc2Cmd.PersistentFlags().String("accountId", "", "aws account number")
 	AwsxEc2Cmd.PersistentFlags().String("zone", "", "aws region")
