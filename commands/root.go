@@ -6,6 +6,7 @@ import (
 
 	"github.com/Appkube-awsx/awsx-ec2/client"
 	"github.com/Appkube-awsx/awsx-ec2/commands/ec2cmd"
+	"github.com/Appkube-awsx/awsx-ec2/input"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/spf13/cobra"
 )
@@ -13,7 +14,7 @@ import (
 // AwsxCloudElementsCmd represents the base command when called without any subcommands
 var AwsxEc2Cmd = &cobra.Command{
 	Use:   "GetEC2List",
-	Short: "GetEC2List command gets resource Arn",
+	Short: "GetEC2List command gets list of EC2 instances for a AWS account",
 	Long:  `GetEC2List command gets resource Arn details of an AWS account`,
 
 	Run: func(cmd *cobra.Command, args []string) {
@@ -26,17 +27,15 @@ var AwsxEc2Cmd = &cobra.Command{
 		env := cmd.PersistentFlags().Lookup("env").Value.String()
 		crossAccountRoleArn := cmd.PersistentFlags().Lookup("crossAccountRoleArn").Value.String()
 		externalId := cmd.PersistentFlags().Lookup("externalId").Value.String()
-		authFlag := input.verifyInputData(vaultUrl, accountNo, region, accessKey, secKey, crossAccountRoleArn, externalId)
-
-		//(vaultUrl, accountNo, region, acKey, secKey, crossAccountRoleArn, externalId)
-
-		if authFlag {
-			DescribeInstances(region, acKey, secKey, env, crossAccountRoleArn, externalId)
+		//authFlag :=   authenticater.AuthenticateData(vaultUrl, accountNo, region, accessKey, secKey, crossAccountRoleArn, externalId)
+		verifiedInput := input.VerifyInputData(vaultUrl, accountNo, region, accessKey, secKey, crossAccountRoleArn, externalId)
+		if verifiedInput {
+			ListInstances(region, accessKey, secKey, env, crossAccountRoleArn, externalId)
 		}
 	},
 }
 
-func DescribeInstances(region string, accessKey string, secretKey string, env string, crossAccountRoleArn string, externalId string) *ec2.DescribeInstancesOutput {
+func ListInstances(region string, accessKey string, secretKey string, env string, crossAccountRoleArn string, externalId string) *ec2.DescribeInstancesOutput {
 	log.Println("Getting aws config resource summary")
 	ec2Client := client.GetClient(region, crossAccountRoleArn, accessKey, secretKey, externalId)
 
