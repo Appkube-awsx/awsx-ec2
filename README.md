@@ -36,11 +36,11 @@ It has detailed instruction on how to write a subcommand plugin , build / test /
 
 # How to build / Test
             go run main.go
-                - Program will print Calling aws-cloudelements on console 
+                - Program will print Calling awsx-ec2 on console 
 
             Another way of testing is by running go install command
             go install
-            - go install command creates an exe with the name of the module (e.g. awsx-cloudelements) and save it in the GOPATH
+            - go install command creates an exe with the name of the module (e.g. awsx-ec2) and save it in the GOPATH
             - Now we can execute this command on command prompt as below
             awsx-cloudelements --vaultURL=vault.dummy.net --accountId=xxxxxxxxxx --zone=us-west-2
 
