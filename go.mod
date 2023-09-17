@@ -1,9 +1,10 @@
 module github.com/Appkube-awsx/awsx-ec2
 
-go 1.20
+go 1.19
 
 require (
-	github.com/aws/aws-sdk-go v1.44.239
+	github.com/Appkube-awsx/awsx-common v1.1.6
+	github.com/aws/aws-sdk-go v1.44.246
 	github.com/spf13/cobra v1.7.0
 )
 

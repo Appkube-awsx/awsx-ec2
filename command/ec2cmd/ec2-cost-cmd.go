@@ -1,38 +1,39 @@
 package ec2cmd
 
 import (
+	"github.com/Appkube-awsx/awsx-common/authenticate"
 	"log"
 
-	"github.com/Appkube-awsx/awsx-ec2/authenticater"
-	"github.com/Appkube-awsx/awsx-ec2/client"
+	"github.com/Appkube-awsx/awsx-common/client"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 	"github.com/spf13/cobra"
 )
 
 var GetCostDataCmd = &cobra.Command{
-	Use:   "getCostData",
-	Short: "Get the Cost of EC2 services",
-	Long:  ``,
+	Use:   "getEC2CostData",
+	Short: "Get cost of EC2 services",
+	Long:  `Get cost of EC2 services`,
 	Run: func(cmd *cobra.Command, args []string) {
-		vaultUrl := cmd.Parent().PersistentFlags().Lookup("vaultUrl").Value.String()
-		accountNo := cmd.Parent().PersistentFlags().Lookup("accountId").Value.String()
-		region := cmd.Parent().PersistentFlags().Lookup("zone").Value.String()
-		acKey := cmd.Parent().PersistentFlags().Lookup("accessKey").Value.String()
-		secKey := cmd.Parent().PersistentFlags().Lookup("secretKey").Value.String()
-		crossAccountRoleArn := cmd.Parent().PersistentFlags().Lookup("crossAccountRoleArn").Value.String()
-		//env := cmd.Parent().PersistentFlags().Lookup("env").Value.String()
-		externalId := cmd.Parent().PersistentFlags().Lookup("externalId").Value.String()
-		authFlag := authenticater.AuthenticateData(vaultUrl, accountNo, region, acKey, secKey, crossAccountRoleArn, externalId)
+		authFlag, clientAuth, err := authenticate.SubCommandAuth(cmd)
+		if err != nil {
+			cmd.Help()
+			return
+		}
 		if authFlag {
-			getClusterCostDetail(region, crossAccountRoleArn, acKey, secKey, externalId)
+			instanceName, _ := cmd.Flags().GetString("instanceName")
+			if instanceName != "" {
+				getClusterCostDetail(*clientAuth)
+			} else {
+				log.Fatalln("instanceName not provided. Program exit")
+			}
 		}
 	},
 }
 
-func getClusterCostDetail(region string, crossAccountRoleArn string, accessKey string, secretKey string, externalId string) (*costexplorer.GetCostAndUsageOutput, error) {
+func getClusterCostDetail(auth client.Auth) (*costexplorer.GetCostAndUsageOutput, error) {
 	log.Println("Getting cost data")
-	costClient := client.GetCostClient(region, crossAccountRoleArn, accessKey, secretKey, externalId)
+	costClient := client.GetClient(auth, client.COST_EXPLORER).(*costexplorer.CostExplorer)
 	input := &costexplorer.GetCostAndUsageInput{
 		TimePeriod: &costexplorer.DateInterval{
 			Start: aws.String("2023-02-01"),

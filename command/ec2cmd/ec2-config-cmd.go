@@ -2,10 +2,10 @@ package ec2cmd
 
 import (
 	"fmt"
+	"github.com/Appkube-awsx/awsx-common/authenticate"
 	"log"
 
-	"github.com/Appkube-awsx/awsx-ec2/authenticater"
-	"github.com/Appkube-awsx/awsx-ec2/client"
+	"github.com/Appkube-awsx/awsx-common/client"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/spf13/cobra"
@@ -18,22 +18,15 @@ var GetEC2ConfigCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("Command getEC2Config started")
-		vaultUrl := cmd.Parent().PersistentFlags().Lookup("vaultUrl").Value.String()
-		accountNo := cmd.Parent().PersistentFlags().Lookup("accountId").Value.String()
-		region := cmd.Parent().PersistentFlags().Lookup("zone").Value.String()
-		acKey := cmd.Parent().PersistentFlags().Lookup("accessKey").Value.String()
-		secKey := cmd.Parent().PersistentFlags().Lookup("secretKey").Value.String()
-		crossAccountRoleArn := cmd.Parent().PersistentFlags().Lookup("crossAccountRoleArn").Value.String()
-		env := cmd.Parent().PersistentFlags().Lookup("env").Value.String()
-		externalId := cmd.Parent().PersistentFlags().Lookup("externalId").Value.String()
-		//instanceName :=
-
-		authFlag := authenticater.AuthenticateData(vaultUrl, accountNo, region, acKey, secKey, crossAccountRoleArn, externalId)
-
+		authFlag, clientAuth, err := authenticate.SubCommandAuth(cmd)
+		if err != nil {
+			cmd.Help()
+			return
+		}
 		if authFlag {
 			instanceName, _ := cmd.Flags().GetString("instanceName")
 			if instanceName != "" {
-				DescribeInstances(region, acKey, secKey, env, crossAccountRoleArn, externalId, instanceName)
+				describeInstances(instanceName, *clientAuth)
 			} else {
 				log.Fatalln("instanceName not provided. Program exit")
 			}
@@ -41,9 +34,9 @@ var GetEC2ConfigCmd = &cobra.Command{
 	},
 }
 
-func DescribeInstances(region string, accessKey string, secretKey string, env string, crossAccountRoleArn string, externalId string, instanceName string) *ec2.DescribeInstancesOutput {
+func describeInstances(instanceName string, auth client.Auth) *ec2.DescribeInstancesOutput {
 	log.Println("Getting aws config resource summary")
-	ec2Client := client.GetClient(region, crossAccountRoleArn, accessKey, secretKey, externalId)
+	ec2Client := client.GetClient(auth, client.EC2_CLIENT).(*ec2.EC2)
 	filters := []*ec2.Filter{
 		{
 			Name:   aws.String("tag:Name"),
